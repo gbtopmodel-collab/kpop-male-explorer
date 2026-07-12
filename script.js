@@ -3,6 +3,9 @@ let selectedSong = null;
 let radarChart = null;
 let authorName = '익명';
 let authorMode = 'anonymous'; // anonymous | name
+let adminMode = false;
+let adminClickCount = 0;
+let adminClickTimer = null;
 
 const COMMENT_API = 'https://api.jsonblob.com/api/jsonBlob/019f56ea-4cf8-72f0-9f82-3c7c698440e8';
 
@@ -676,6 +679,66 @@ window.submitReply = function(parentId) {
     });
 }
 
+// ── 관리자 모드 (04 섹션 번호 3번 빠르게 클릭) ──
+window.addEventListener('DOMContentLoaded', () => {
+  const sec4Num = document.querySelector('#sec4 .sec-num');
+  if (sec4Num) {
+    sec4Num.style.cursor = 'pointer';
+    sec4Num.addEventListener('click', () => {
+      adminClickCount++;
+      clearTimeout(adminClickTimer);
+      adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 800);
+      if (adminClickCount >= 3) {
+        adminClickCount = 0;
+        adminMode = !adminMode;
+        sec4Num.style.outline = adminMode ? '2px solid var(--accent)' : 'none';
+        renderComments();
+      }
+    });
+  }
+});
+
+// 댓글 개별 삭제
+window.deleteComment = function(commentId) {
+  if (!confirm('이 댓글을 삭제할까요?')) return;
+  
+  fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
+    .then(res => res.json())
+    .then(comments => {
+      if (!Array.isArray(comments)) return;
+      const filtered = comments.filter(c => c.id !== commentId);
+      return fetch(COMMENT_API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(filtered)
+      });
+    })
+    .then(() => renderComments())
+    .catch(err => console.error('Delete failed:', err));
+}
+
+// 답글 개별 삭제
+window.deleteReply = function(commentId, replyId) {
+  if (!confirm('이 답글을 삭제할까요?')) return;
+  
+  fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
+    .then(res => res.json())
+    .then(comments => {
+      if (!Array.isArray(comments)) return;
+      const parent = comments.find(c => c.id === commentId);
+      if (parent && Array.isArray(parent.replies)) {
+        parent.replies = parent.replies.filter(r => r.id !== replyId);
+      }
+      return fetch(COMMENT_API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(comments)
+      });
+    })
+    .then(() => renderComments())
+    .catch(err => console.error('Delete reply failed:', err));
+}
+
 function renderComments() {
   fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
     .then(res => res.json())
@@ -688,17 +751,22 @@ function renderComments() {
       
       listContainer.innerHTML = comments.map(c => {
         const replies = Array.isArray(c.replies) ? c.replies : [];
+        const delCommentBtn = adminMode ? `<button class="admin-delete-btn" onclick="deleteComment(${c.id})" title="댓글 삭제">✕</button>` : '';
+        
         const repliesHtml = replies.length > 0 ? `
           <ul class="reply-list">
-            ${replies.map(r => `
+            ${replies.map(r => {
+              const delReplyBtn = adminMode ? `<button class="admin-delete-btn small" onclick="deleteReply(${c.id},${r.id})" title="답글 삭제">✕</button>` : '';
+              return `
               <li class="reply-item">
                 <div class="comment-meta">
                   <span class="comment-author">${escapeHtml(r.author || '익명')}</span>
                   <span class="comment-date">${r.date || ''}</span>
+                  ${delReplyBtn}
                 </div>
                 <div class="comment-text">${escapeHtml(r.text)}</div>
               </li>
-            `).join('')}
+            `}).join('')}
           </ul>
         ` : '';
         
@@ -709,6 +777,7 @@ function renderComments() {
             <div class="comment-meta">
               <span class="comment-author">${escapeHtml(c.author || '익명')}</span>
               <span class="comment-date">${c.date || ''}</span>
+              ${delCommentBtn}
             </div>
             <div class="comment-text">${escapeHtml(c.text)}</div>
             <button class="reply-toggle-btn" onclick="toggleReplyInput(${c.id})">💬 답글${replyCount}</button>
@@ -730,4 +799,3 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
