@@ -862,6 +862,20 @@ body {
   display: flex;
   gap: 8px;
   align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.reply-author-wrapper {
+  flex-shrink: 0;
+}
+
+.reply-dropdown .dropdown-btn {
+  font-size: 0.78rem;
+  padding: 6px 10px;
+}
+
+.reply-dropdown .dropdown-content {
+  min-width: 100px;
 }
 
 .reply-textarea {

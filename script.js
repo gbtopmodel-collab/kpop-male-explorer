@@ -627,12 +627,75 @@ window.toggleReplyInput = function(commentId) {
   replyForm.id = 'reply-form-' + commentId;
   replyForm.innerHTML = `
     <div class="reply-input-row">
+      <div class="reply-author-wrapper">
+        <div class="dropdown reply-dropdown" id="reply-dropdown-${commentId}">
+          <button class="dropdown-btn" onclick="toggleReplyDropdown(event, ${commentId})">
+            <span id="reply-author-display-${commentId}">${authorName}</span> <span class="arrow">∨</span>
+          </button>
+          <div class="dropdown-content" id="reply-dropdown-content-${commentId}">
+            <button onclick="selectReplyAuthor('anonymous', ${commentId}, event)">익명</button>
+            <button onclick="openReplyNameModal(${commentId}, event)">이름 설정</button>
+          </div>
+        </div>
+      </div>
       <textarea class="reply-textarea" id="reply-input-${commentId}" placeholder="답글을 입력하세요..." rows="2"></textarea>
       <button class="reply-submit-btn" onclick="submitReply(${commentId})">답글</button>
     </div>
   `;
   commentItem.appendChild(replyForm);
   document.getElementById('reply-input-' + commentId).focus();
+}
+
+// 답글 드롭다운 토글
+window.toggleReplyDropdown = function(e, commentId) {
+  e.stopPropagation();
+  const content = document.getElementById('reply-dropdown-content-' + commentId);
+  if (content) content.classList.toggle('show');
+}
+
+// 답글 작성자 - 익명 선택
+window.selectReplyAuthor = function(mode, commentId, e) {
+  e.stopPropagation();
+  authorName = '익명';
+  authorMode = 'anonymous';
+  const display = document.getElementById('reply-author-display-' + commentId);
+  if (display) display.textContent = '익명';
+  // 메인 댓글 드롭다운도 동기화
+  const mainDisplay = document.getElementById('current-author-display');
+  if (mainDisplay) mainDisplay.textContent = '익명';
+  const content = document.getElementById('reply-dropdown-content-' + commentId);
+  if (content) content.classList.remove('show');
+}
+
+// 답글 작성자 - 이름 설정 모달
+let replyNameTargetId = null;
+window.openReplyNameModal = function(commentId, e) {
+  e.stopPropagation();
+  replyNameTargetId = commentId;
+  const content = document.getElementById('reply-dropdown-content-' + commentId);
+  if (content) content.classList.remove('show');
+  document.getElementById('name-modal').style.display = 'flex';
+  document.getElementById('modal-name-input').focus();
+}
+
+// 기존 saveNameFromModal 오버라이드 (답글용도 지원)
+const originalSaveName = window.saveNameFromModal || saveNameFromModal;
+window.saveNameFromModal = function() {
+  const input = document.getElementById('modal-name-input');
+  const name = input.value.trim();
+  if (!name) return;
+  authorName = name;
+  authorMode = 'name';
+  // 메인 디스플레이 업데이트
+  const mainDisplay = document.getElementById('current-author-display');
+  if (mainDisplay) mainDisplay.textContent = name;
+  // 답글 디스플레이도 업데이트
+  if (replyNameTargetId !== null) {
+    const replyDisplay = document.getElementById('reply-author-display-' + replyNameTargetId);
+    if (replyDisplay) replyDisplay.textContent = name;
+    replyNameTargetId = null;
+  }
+  closeNameModal();
 }
 
 // 답글 등록
