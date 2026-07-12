@@ -561,6 +561,27 @@ body {
   flex-shrink: 0;
 }
 
+.yt-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #ff0000;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: var(--ease);
+  opacity: 0.8;
+}
+
+.yt-link-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 .comment {
   font-size: 0.78rem;
   color: var(--t2);

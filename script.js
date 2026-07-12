@@ -462,15 +462,18 @@ function renderResults(elementId, list, isProposed) {
   container.innerHTML = list.map((item, i) => {
     const song = item.song;
     const distanceVal = isProposed ? (item.finalDist || item.dist) : item.dist;
+    const ytQuery = encodeURIComponent(`${song.artist} ${song.title}`);
+    const ytUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
     return `
-      <div class="feat-track" onclick="loadRecommendedSong(${song.id})">
-        <div class="feat-left">
+      <div class="feat-track">
+        <div class="feat-left" onclick="loadRecommendedSong(${song.id})">
           <span class="feat-idx">${i + 1}</span>
           <div class="feat-info">
             <span class="feat-title">${song.emoji} ${song.title}</span>
             <span class="feat-artist">${song.artist} • ${song.genre}</span>
           </div>
         </div>
+        <a class="yt-link-btn" href="${ytUrl}" target="_blank" rel="noopener" title="YouTube에서 듣기" onclick="event.stopPropagation()">▶</a>
         <span class="feat-dist">d=${distanceVal.toFixed(3)}</span>
       </div>
     `;
