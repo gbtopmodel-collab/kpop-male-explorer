@@ -917,8 +917,8 @@ body {
 }
 
 .reply-item {
-  background: var(--surface-alt);
-  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-left: 3px solid var(--border);
   border-radius: 0 var(--r) var(--r) 0;
   padding: 10px 14px;
   animation: logIn 0.2s ease both;
