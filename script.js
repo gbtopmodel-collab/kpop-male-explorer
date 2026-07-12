@@ -4,7 +4,7 @@ let radarChart = null;
 let authorName = '익명';
 let authorMode = 'anonymous'; // anonymous | name
 
-const NPOINT_URL = 'https://api.npoint.io/1b02a4308beb057be505';
+const COMMENT_API = 'https://jsonblob.com/api/jsonBlob/019f56de-1e1b-789a-b10c-013d503a47d6';
 
 // 가중치 정의
 const WEIGHTS = {
@@ -557,7 +557,7 @@ window.saveNameFromModal = function() {
   closeNameModal();
 }
 
-// ── 공유 댓글 시스템 (npoint.io — CORS 완벽 지원) ──
+// ── 공유 댓글 시스템 (JSONBlob — CORS 완벽 지원) ──
 window.addComment = function() {
   const input = document.getElementById('comment-input');
   const text = input.value.trim();
@@ -567,7 +567,7 @@ window.addComment = function() {
   if (submitBtn) submitBtn.disabled = true;
   
   // 1. 기존 댓글 로드
-  fetch(NPOINT_URL)
+  fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
     .then(res => res.json())
     .then(comments => {
       if (!Array.isArray(comments)) comments = [];
@@ -588,10 +588,10 @@ window.addComment = function() {
       };
       comments.unshift(newComment);
       
-      // 2. 업데이트 저장 (PATCH)
-      return fetch(NPOINT_URL, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      // 2. 업데이트 저장 (PUT)
+      return fetch(COMMENT_API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(comments)
       });
     })
@@ -609,7 +609,7 @@ window.addComment = function() {
 }
 
 function renderComments() {
-  fetch(NPOINT_URL)
+  fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
     .then(res => res.json())
     .then(comments => {
       const listContainer = document.getElementById('comments-list');
