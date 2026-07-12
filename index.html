@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>남자 아이돌 음악 추천</title>
+    <meta name="description" content="필터버블을 벗어나 새로운 케이팝 남자아이돌 음악을 만나보세요.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      MathJax = {
+        tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+
+        <header class="site-header">
+            <span class="project-tag">미적분 주제탐구 프로젝트</span>
+            <h1>남자 아이돌 음악 추천</h1>
+            <p class="subtitle">필터버블을 벗어나 새로운 남자아이돌 음악을 발견해 보세요</p>
+        </header>
+
+        <main>
+
+            <!-- 01 곡 선택 -->
+            <section class="section" id="sec1">
+                <div class="sec-header">
+                    <span class="sec-num">01</span>
+                    <div>
+                        <h2>좋아하는 곡을 골라보세요</h2>
+                        <p class="sec-desc">곡 제목이나 가수를 입력하고 자동완성 목록에서 선택해 주세요. (817곡 데이터베이스 탑재)</p>
+                    </div>
+                </div>
+
+                <!-- 직접 검색/입력 폼 (단일 방식) -->
+                <div class="custom-song-form" id="custom-form">
+                    <div class="search-autocomplete-wrapper">
+                        <div class="cs-inputs">
+                            <input type="text" id="custom-title" placeholder="제목" aria-label="곡 제목" oninput="showSearchSuggestions()" autocomplete="off" onclick="event.stopPropagation()">
+                            <input type="text" id="custom-artist" placeholder="가수" aria-label="아티스트" oninput="showSearchSuggestions()" autocomplete="off" onclick="event.stopPropagation()">
+                        </div>
+                        <!-- 자동완성 추천 목록 -->
+                        <div class="autocomplete-suggestions" id="suggestions-box" style="display: none;"></div>
+                    </div>
+                    <button class="cs-btn" onclick="addCustomSong()">분석 및 추천받기</button>
+                </div>
+            </section>
+
+            <!-- 02 음악 특성 -->
+            <section class="section locked" id="sec2">
+                <div class="sec-header">
+                    <span class="sec-num">02</span>
+                    <div>
+                        <h2>이 곡의 음악 특성</h2>
+                        <p class="sec-desc">에너지·밝기·템포 등 6가지 특성을 0~1 점수로 나타냈어요.</p>
+                    </div>
+                </div>
+                <div class="chart-row">
+                    <div class="chart-box">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div class="info-box" id="selected-info">
+                        <div class="placeholder">
+                            <span>🎵</span>
+                            <p>곡을 선택하면<br>특성이 표시돼요</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 03 추천 비교 -->
+            <section class="section locked" id="sec3">
+                <div class="sec-header">
+                    <span class="sec-num">03</span>
+                    <div>
+                        <h2>추천 결과 비교</h2>
+                        <p class="sec-desc">같은 곡에서 출발해도 알고리즘에 따라 추천이 달라져요.</p>
+                    </div>
+                </div>
+
+                <div class="compare-grid">
+                    <!-- 기존 방식 -->
+                    <div class="algo-box">
+                        <div class="algo-head">
+                            <span class="algo-name">기존 추천 알고리즘</span>
+                            <span class="algo-chip">단순 최단거리</span>
+                        </div>
+                        <p class="algo-note">가장 비슷한 곡 순서대로 추천해요. 안전하지만 취향이 점점 좁아질 수 있어요.</p>
+                        <details class="math-toggle">
+                            <summary>거리 함수 수식 보기</summary>
+                            <div class="formula">$$d(A,B)=\sqrt{\displaystyle\sum_{i=1}^{n}(a_i-b_i)^2}$$</div>
+                        </details>
+                        <div class="result-list" id="result-standard">
+                            <div class="result-empty">곡을 선택해 주세요</div>
+                        </div>
+                        <p class="comment warn" id="comment-standard">⚠️ 비슷한 곡만 반복 추천되는 '필터버블'이 생길 수 있어요.</p>
+                    </div>
+
+                    <!-- 제안 방식 -->
+                    <div class="algo-box proposed">
+                        <div class="algo-head">
+                            <span class="algo-name">취향 확장 알고리즘 <span class="badge-new">제안</span></span>
+                            <span class="algo-chip highlight">가중 거리 + 범위 탐색</span>
+                        </div>
+                        <p class="algo-note">감정 특성(에너지·밝기)을 더 중시하고, '적당히 다른' 거리 범위 안의 곡을 우선 추천해요.</p>
+                        <details class="math-toggle">
+                            <summary>가중 거리 함수 수식 보기</summary>
+                            <div class="formula">$$d_w(A,B)=\sqrt{\displaystyle\sum_{i=1}^{n}w_i(a_i-b_i)^2}$$</div>
+                        </details>
+                        <div class="result-list" id="result-proposed">
+                            <div class="result-empty">곡을 선택해 주세요</div>
+                        </div>
+                        <p class="comment" id="comment-proposed">✨ 새로운 장르/무드의 곡도 발견할 수 있어요.</p>
+                    </div>
+                </div>
+
+                <!-- 가중치 요약 -->
+                <details class="weight-panel">
+                    <summary class="weight-header">
+                        <span class="weight-title">가중치 보기</span>
+                    </summary>
+                    <div class="weight-strip">
+                        <span class="ws-label">⚖️ 가중치</span>
+                        <span class="ws-chip high">밝기 2.0×</span>
+                        <span class="ws-chip high">에너지 1.8×</span>
+                        <span class="ws-chip mid">댄서빌리티 1.5×</span>
+                        <span class="ws-chip mid">템포 1.2×</span>
+                        <span class="ws-chip low">어쿠스틱 0.6×</span>
+                        <span class="ws-chip low">음량 0.5×</span>
+                    </div>
+                </details>
+
+                <!-- 거리 계산 로그 -->
+                <details class="log-panel">
+                    <summary class="log-header">
+                        <span class="log-title">거리 계산 로그 보기</span>
+                        <div class="log-legend">
+                            <span class="ll-item std">기존</span>
+                            <span class="ll-item prop">제안</span>
+                            <span class="ll-item band">🎯 탐색 범위: 0.30 ~ 0.75</span>
+                        </div>
+                    </summary>
+                    <ul id="distance-log-list">
+                        <li>계산 결과가 여기에 표시돼요.</li>
+                    </ul>
+                </details>
+            </section>
+
+            <!-- 04 댓글 -->
+            <section class="section" id="sec4">
+                <div class="sec-header">
+                    <span class="sec-num">04</span>
+                    <div>
+                        <h2>댓글</h2>
+                    </div>
+                </div>
+                
+                <div class="comment-input-container">
+                    <div class="comment-input-row">
+                        <div class="author-dropdown-wrapper">
+                            <div class="dropdown" id="author-dropdown">
+                                <button class="dropdown-btn" onclick="toggleDropdown(event)">
+                                    <span id="current-author-display">익명</span> <span class="arrow">∨</span>
+                                </button>
+                                <div class="dropdown-content" id="author-dropdown-content">
+                                    <button onclick="selectAuthorMode('anonymous', event)">익명</button>
+                                    <button onclick="openNameModal(event)">이름 설정</button>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea id="comment-input" placeholder="댓글" rows="3" aria-label="댓글"></textarea>
+                    </div>
+                    <div class="comment-submit-row">
+                        <button class="cs-btn" onclick="addComment()">작성</button>
+                    </div>
+                </div>
+                
+                <div class="comments-list-container">
+                    <ul id="comments-list"></ul>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="site-footer">
+            미적분 주제탐구 프로젝트 &nbsp;|&nbsp; 함수의 극솟값과 유클리드 거리 응용
+        </footer>
+
+    </div>
+
+    <!-- 이름 설정 모달 팝업 -->
+    <div class="modal-overlay" id="name-modal" style="display: none;" onclick="closeNameModalOnOverlay(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3>이름 설정</h3>
+            <input type="text" id="modal-name-input" placeholder="이름" aria-label="이름" maxlength="20">
+            <div class="modal-buttons">
+                <button class="modal-btn-cancel" onclick="closeNameModal()">취소</button>
+                <button class="modal-btn-confirm" onclick="saveNameFromModal()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="songs_db.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
