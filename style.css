@@ -836,6 +836,102 @@ body {
   line-height: 1.5;
 }
 
+/* ── 답글 버튼 ── */
+.reply-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--t3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 6px 0 2px;
+  font-family: inherit;
+  transition: var(--ease);
+}
+
+.reply-toggle-btn:hover {
+  color: var(--accent);
+}
+
+/* ── 답글 입력 폼 ── */
+.reply-form {
+  margin-top: 10px;
+  animation: logIn 0.2s ease both;
+}
+
+.reply-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.reply-textarea {
+  flex: 1;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--t1);
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: var(--ease);
+}
+
+.reply-textarea:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.reply-submit-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r);
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--ease);
+  white-space: nowrap;
+}
+
+.reply-submit-btn:hover {
+  background: #d61f33;
+}
+
+.reply-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 답글 목록 ── */
+.reply-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-item {
+  background: var(--surface-alt);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 10px 14px;
+  animation: logIn 0.2s ease both;
+}
+
+.reply-item .comment-meta {
+  font-size: 0.72rem;
+}
+
+.reply-item .comment-text {
+  font-size: 0.82rem;
+}
+
 /* ── 이름 설정 모달 ── */
 .modal-overlay {
   position: fixed;

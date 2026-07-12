@@ -557,7 +557,14 @@ window.saveNameFromModal = function() {
   closeNameModal();
 }
 
-// ── 공유 댓글 시스템 (JSONBlob — CORS 완벽 지원) ──
+// ── 공유 댓글 시스템 (JSONBlob — CORS 완벽 지원 + 답글) ──
+function getTimestamp() {
+  return new Date().toLocaleString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+}
+
 window.addComment = function() {
   const input = document.getElementById('comment-input');
   const text = input.value.trim();
@@ -566,29 +573,19 @@ window.addComment = function() {
   const submitBtn = document.querySelector('#sec4 .cs-btn');
   if (submitBtn) submitBtn.disabled = true;
   
-  // 1. 기존 댓글 로드
   fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
     .then(res => res.json())
     .then(comments => {
       if (!Array.isArray(comments)) comments = [];
       
-      const newComment = {
+      comments.unshift({
         id: Date.now(),
         author: authorName,
         text: text,
-        date: new Date().toLocaleString('ko-KR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        })
-      };
-      comments.unshift(newComment);
+        date: getTimestamp(),
+        replies: []
+      });
       
-      // 2. 업데이트 저장 (PUT)
       return fetch(COMMENT_API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -608,6 +605,77 @@ window.addComment = function() {
     });
 }
 
+// 답글 입력창 토글
+window.toggleReplyInput = function(commentId) {
+  const existing = document.getElementById('reply-form-' + commentId);
+  if (existing) {
+    existing.remove();
+    return;
+  }
+  
+  // 다른 열린 답글 입력창 닫기
+  document.querySelectorAll('.reply-form').forEach(el => el.remove());
+  
+  const commentItem = document.querySelector(`[data-comment-id="${commentId}"]`);
+  if (!commentItem) return;
+  
+  const replyForm = document.createElement('div');
+  replyForm.className = 'reply-form';
+  replyForm.id = 'reply-form-' + commentId;
+  replyForm.innerHTML = `
+    <div class="reply-input-row">
+      <textarea class="reply-textarea" id="reply-input-${commentId}" placeholder="답글을 입력하세요..." rows="2"></textarea>
+      <button class="reply-submit-btn" onclick="submitReply(${commentId})">답글</button>
+    </div>
+  `;
+  commentItem.appendChild(replyForm);
+  document.getElementById('reply-input-' + commentId).focus();
+}
+
+// 답글 등록
+window.submitReply = function(parentId) {
+  const input = document.getElementById('reply-input-' + parentId);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const btn = input.parentElement.querySelector('.reply-submit-btn');
+  if (btn) btn.disabled = true;
+  
+  fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
+    .then(res => res.json())
+    .then(comments => {
+      if (!Array.isArray(comments)) comments = [];
+      
+      const parent = comments.find(c => c.id === parentId);
+      if (parent) {
+        if (!Array.isArray(parent.replies)) parent.replies = [];
+        parent.replies.push({
+          id: Date.now(),
+          author: authorName,
+          text: text,
+          date: getTimestamp()
+        });
+      }
+      
+      return fetch(COMMENT_API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(comments)
+      });
+    })
+    .then(() => {
+      renderComments();
+    })
+    .catch(err => {
+      console.error("Failed to add reply:", err);
+      alert("답글 등록에 실패했습니다.");
+    })
+    .finally(() => {
+      if (btn) btn.disabled = false;
+    });
+}
+
 function renderComments() {
   fetch(COMMENT_API, { headers: { 'Accept': 'application/json' } })
     .then(res => res.json())
@@ -618,15 +686,36 @@ function renderComments() {
         return;
       }
       
-      listContainer.innerHTML = comments.map(c => `
-        <li class="comment-item">
-          <div class="comment-meta">
-            <span class="comment-author">${escapeHtml(c.author || '익명')}</span>
-            <span class="comment-date">${c.date || ''}</span>
-          </div>
-          <div class="comment-text">${escapeHtml(c.text)}</div>
-        </li>
-      `).join('');
+      listContainer.innerHTML = comments.map(c => {
+        const replies = Array.isArray(c.replies) ? c.replies : [];
+        const repliesHtml = replies.length > 0 ? `
+          <ul class="reply-list">
+            ${replies.map(r => `
+              <li class="reply-item">
+                <div class="comment-meta">
+                  <span class="comment-author">${escapeHtml(r.author || '익명')}</span>
+                  <span class="comment-date">${r.date || ''}</span>
+                </div>
+                <div class="comment-text">${escapeHtml(r.text)}</div>
+              </li>
+            `).join('')}
+          </ul>
+        ` : '';
+        
+        const replyCount = replies.length > 0 ? ` (${replies.length})` : '';
+        
+        return `
+          <li class="comment-item" data-comment-id="${c.id}">
+            <div class="comment-meta">
+              <span class="comment-author">${escapeHtml(c.author || '익명')}</span>
+              <span class="comment-date">${c.date || ''}</span>
+            </div>
+            <div class="comment-text">${escapeHtml(c.text)}</div>
+            <button class="reply-toggle-btn" onclick="toggleReplyInput(${c.id})">💬 답글${replyCount}</button>
+            ${repliesHtml}
+          </li>
+        `;
+      }).join('');
     })
     .catch(err => {
       console.error("Failed to fetch comments:", err);
