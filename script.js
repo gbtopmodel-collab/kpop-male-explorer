@@ -4,7 +4,7 @@ let radarChart = null;
 let authorName = '익명';
 let authorMode = 'anonymous'; // anonymous | name
 
-const COMMENT_API = 'https://jsonblob.com/api/jsonBlob/019f56de-1e1b-789a-b10c-013d503a47d6';
+const COMMENT_API = 'https://jsonblob.com/api/jsonBlob/019f56e4-7bbd-7256-9512-2ac0dc7f0173';
 
 // 가중치 정의
 const WEIGHTS = {
