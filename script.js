@@ -465,17 +465,16 @@ function renderResults(elementId, list, isProposed) {
     const ytQuery = encodeURIComponent(`${song.artist} ${song.title}`);
     const ytUrl = `https://www.youtube.com/results?search_query=${ytQuery}`;
     return `
-      <div class="feat-track">
-        <div class="feat-left" onclick="loadRecommendedSong(${song.id})">
+      <a class="feat-track" href="${ytUrl}" target="_blank" rel="noopener">
+        <div class="feat-left">
           <span class="feat-idx">${i + 1}</span>
           <div class="feat-info">
             <span class="feat-title">${song.emoji} ${song.title}</span>
             <span class="feat-artist">${song.artist} • ${song.genre}</span>
           </div>
         </div>
-        <a class="yt-link-btn" href="${ytUrl}" target="_blank" rel="noopener" title="YouTube에서 듣기" onclick="event.stopPropagation()">▶</a>
         <span class="feat-dist">d=${distanceVal.toFixed(3)}</span>
-      </div>
+      </a>
     `;
   }).join('');
 }

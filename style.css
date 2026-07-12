@@ -505,6 +505,8 @@ body {
   justify-content: space-between;
   cursor: pointer;
   transition: var(--ease);
+  text-decoration: none;
+  color: inherit;
 }
 
 .feat-track:hover {
