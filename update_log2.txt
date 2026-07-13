@@ -1,9 +1,0 @@
-﻿Indices: {'7-2': 75, 'ch8': 82, 'ref': 86}
-Anchor 7-3~7-5: [밝기(valence)에 가장 높은 가중치를 부여한 이유는, 같은 댄스 장르라도 밝은 분위기의 곡과 어두운 분]
-Inserted 15 paragraphs for section 7-3~7-5
-Anchor ch8: [이 과정에서 배운 핵심적인 교훈은 세 가지다. 첫째, 수학 공식은 코드로 옮기면 실제로 작동한다. d(A,B]
-Inserted 4 paragraphs for ch8
-Anchor refs: [[6] Spotify for Developers, "Audio Features" 공식 문서. https://]
-Inserted 4 references
-Saved: C:\Users\gbtop\.gemini\antigravity-ide\scratch\kpop-male-explorer\report_final.docx
-DONE
