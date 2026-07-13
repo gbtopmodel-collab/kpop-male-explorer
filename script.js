@@ -369,9 +369,24 @@ function calculateRecommendations(baseSong) {
   const propResults = [];
   const logs = [];
   
+  // ── 장르 친화도 매트릭스 (값이 작을수록 유사한 장르) ──
+  const GENRE_GROUPS = {
+    '발라드': 0, '감성 팝': 1, '미디엄 팝': 2, '밝은 팝': 3,
+    '댄스 팝': 4, '펑키 팝': 5, '파워 댄스': 6, '강렬 댄스': 7, '힙합': 8
+  };
+  
+  function getGenreDistance(g1, g2) {
+    if (g1 === g2) return 0;
+    const i1 = GENRE_GROUPS[g1] ?? 4;
+    const i2 = GENRE_GROUPS[g2] ?? 4;
+    return Math.abs(i1 - i2);
+  }
+  
   // 1. 모든 데이터베이스 대상 거리 계산
   songs.forEach(target => {
     if (target.id === baseSong.id) return; // 자기 자신 제외
+    
+    const genreDist = getGenreDistance(baseSong.genre, target.genre);
     
     // (a) 단순 유클리드 거리 (Standard Euclidean Distance)
     let stdDist = Math.sqrt(
@@ -383,19 +398,25 @@ function calculateRecommendations(baseSong) {
       Math.pow(baseSong.features.loudness - target.features.loudness, 2)
     );
     
-    // 1/2/3군 동등성 가중 밀착 적용 (같은 군일 경우 거리 35% 단축하여 우선 추천되도록 조절)
+    // 장르 친화 보정: 같은 장르 → 거리 단축, 먼 장르 → 거리 증가
+    if (genreDist === 0) {
+      stdDist *= 0.80;  // 같은 장르: 20% 보너스
+    } else if (genreDist >= 3) {
+      stdDist *= (1 + genreDist * 0.08);  // 먼 장르: 페널티
+    }
+    
+    // 1/2/3군 동등성 가중 밀착 적용
     if (baseSong.tier && target.tier && baseSong.tier === target.tier) {
       stdDist *= 0.65;
     }
     
-    // 세대 동등성 가중 밀착 적용 (같은 세대일 경우 거리 추가 25% 단축)
-    // 군 보정과 합산 시 같은 세대+같은 군이면 최대 51% 단축 효과
+    // 세대 동등성 가중 밀착 적용
     if (baseSong.gen && target.gen && baseSong.gen > 0 && target.gen > 0 && baseSong.gen === target.gen) {
       stdDist *= 0.75;
     }
     
     // (b) 가중치 유클리드 거리 (Weighted Euclidean Distance)
-    const propDist = Math.sqrt(
+    let propDist = Math.sqrt(
       WEIGHTS.energy * Math.pow(baseSong.features.energy - target.features.energy, 2) +
       WEIGHTS.valence * Math.pow(baseSong.features.valence - target.features.valence, 2) +
       WEIGHTS.tempo * Math.pow(baseSong.features.tempo - target.features.tempo, 2) +
@@ -403,6 +424,11 @@ function calculateRecommendations(baseSong) {
       WEIGHTS.acousticness * Math.pow(baseSong.features.acousticness - target.features.acousticness, 2) +
       WEIGHTS.loudness * Math.pow(baseSong.features.loudness - target.features.loudness, 2)
     );
+    
+    // 취향확장에도 장르 페널티 적용 (먼 장르일수록 강한 페널티)
+    if (genreDist >= 3) {
+      propDist *= (1 + genreDist * 0.12);
+    }
     
     stdResults.push({ song: target, dist: stdDist });
     propResults.push({ song: target, dist: propDist });
@@ -420,27 +446,20 @@ function calculateRecommendations(baseSong) {
   renderResults('result-standard', stdTop4, false);
   
   // ── (2) 취향 확장 알고리즘 계산 (가중치 + 필터버블 격리 범위 탐색) ──
-  // 가로막혀 있는 거리 임계값 [0.30 ~ 0.75] 사이의 후보군을 필터링하여 '적당한 낯선 매력'을 유도
   let propCandidates = propResults.filter(r => r.dist >= EXPANSION_MIN_DIST && r.dist <= EXPANSION_MAX_DIST);
   
-  // 만약 해당 범위 내 곡이 부족하다면 예외적으로 전체 범위로 확장
   if (propCandidates.length < 4) {
     propCandidates = [...propResults];
   }
   
-  // 다양성 보장: 기존 추천 알고리즘(stdTop4)에 노출된 곡과 동일한 곡을 밀어내는 패널티 가산
+  // 다양성 보장
   const stdTop4Names = stdTop4.map(r => r.song.title.toLowerCase());
-  const sameGenrePenalty = 0.25; // 같은 장르에 패널티를 주어 취향을 강제 분산시킴
-  const duplicatePenalty = 0.45; // 기존 최단거리 알고리즘 추천 곡에 패널티
+  const duplicatePenalty = 0.45;
   
   propCandidates = propCandidates.map(r => {
     let finalDist = r.dist;
     
-    // (a) 동일 장르 분산 패널티
-    if (r.song.genre === baseSong.genre) {
-      finalDist += sameGenrePenalty;
-    }
-    // (b) 기존 알고리즘 추천 곡 중복 차단 패널티
+    // 기존 알고리즘 추천 곡 중복 차단 패널티
     if (stdTop4Names.includes(r.song.title.toLowerCase())) {
       finalDist += duplicatePenalty;
     }
@@ -448,7 +467,6 @@ function calculateRecommendations(baseSong) {
     return { ...r, finalDist };
   });
   
-  // 최종적으로 패널티가 가미된 정렬 거리를 기준으로 4곡 선별
   propCandidates.sort((a, b) => a.finalDist - b.finalDist);
   const propTop4 = propCandidates.slice(0, 4);
   renderResults('result-proposed', propTop4, true);

@@ -1,0 +1,3 @@
+﻿Found indices: {'ch7_title': 67, 'ch8_title': 82, 'ref_title': 86}
+Saved to: C:\Users\gbtop\.gemini\antigravity-ide\scratch\kpop-male-explorer\report_updated.docx
+Done!
