@@ -7,7 +7,7 @@ let adminMode = false;
 let adminClickCount = 0;
 let adminClickTimer = null;
 
-const COMMENT_API = 'https://api.jsonblob.com/api/jsonBlob/019f56ea-4cf8-72f0-9f82-3c7c698440e8';
+const COMMENT_API = 'https://api.jsonblob.com/api/jsonBlob/019f62f8-4fa9-7768-88ed-15fe314e2dcb';
 
 // 가중치 정의
 const WEIGHTS = {
